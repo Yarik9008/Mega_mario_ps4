@@ -8,11 +8,14 @@ import json
 try:
     pygame.init()
     pygame.key.set_repeat(200, 70)
-
+    pygame.display.set_caption('Super Mario PS4')
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     clock = pygame.time.Clock()
 
     player = None
+    coins = 0
+    all_coins = 0
+    joy_control = True
     all_sprites = pygame.sprite.Group()
     wall_tiles_group = pygame.sprite.Group()
     empty_tiles_group = pygame.sprite.Group()
@@ -24,7 +27,7 @@ except Exception as err:
 
 
 def init_controller():
-    global joystick, button_keys, analog_keys
+    global joystick, button_keys, analog_keys, joy_control
     # инициализация джойстика
     try:
         joysticks = []
@@ -35,6 +38,8 @@ def init_controller():
         # подгрузка конфига джойстика
         with open(os.path.join("ps4_keys.json"), 'r+') as file:
             button_keys = json.load(file)
+        if not joysticks:
+            joy_control = False
         # 0: Left analog horizonal, 1: Left Analog Vertical, 2: Right Analog Horizontal
         # 3: Right Analog Vertical 4: Left Trigger, 5: Right Trigger
         analog_keys = {0: 0, 1: 0, 2: 0, 3: 0, 4: -1, 5: -1}
@@ -63,10 +68,14 @@ def load_image(name, color_key=None):
 
 
 def generate_level(filename):
+    global all_coins
     try:
         filename = "data/levels/" + filename
         with open(filename, 'r') as mapFile:
             level_map = [line.strip() for line in mapFile]
+            all_coins = 0
+            for string in level_map:
+                all_coins += list(string).count('*')
         max_width = max(map(len, level_map))
         level = list(map(lambda x: x.ljust(max_width, '.'), level_map))
         new_player, x, y = None, None, None
@@ -79,10 +88,10 @@ def generate_level(filename):
                 elif level[y][x] == '@':
                     EmptyTile('empty', x, y)
                     new_player = Mario(x, y)
-                elif level[y][x] == '?':
-                    EmptyTile('coin', x, y)
                 elif level[y][x] == '*':
-                    EmptyTile('v_block', x, y)
+                    Coin('coin', x, y)
+                elif level[y][x] == '?':
+                    VictoryTile('v_block', x, y)
         # вернем игрока, а также размер поля в клетках
         return new_player, x, y
     except Exception as err:
@@ -99,11 +108,13 @@ def terminate():
 
 def start_screen():
     try:
-        intro_text = ["SUPER MARIO VBROS", "", "", "", "", "", "", "", "", "",
+        intro_text = ["SUPER MARIO PS4", "", "", "", "", "", "",
                       "Правила игры:",
                       "Управление персонажем осуществляется",
                       "посредством стрелочек/грибка.",
-                      ""]
+                      "Esc - выход из игры.",
+                      "",
+                      "Нажмите пробел"]
 
         background = pygame.transform.scale(load_image('background.png'), (WIDTH, HEIGHT))
         screen.blit(background, (0, 0))
@@ -131,6 +142,36 @@ def start_screen():
             clock.tick(FPS)
     except Exception as err:
         login.critical(login(), err)
+
+
+def end_screen():
+    global coins, all_coins
+    try:
+        intro_text = [f"Coins: {coins}/{all_coins}"]
+        background = pygame.transform.scale(load_image('victory_screen.jpg'), (WIDTH, HEIGHT))
+        screen.blit(background, (0, 0))
+        font = pygame.font.Font(None, 40)
+        text_coord = 50
+        for i in range(len(intro_text)):
+            string_rendered = font.render(intro_text[i], 1, pygame.Color(0, 0, 0))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 400 - intro_rect.width // 2
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    return
+            pygame.display.flip()
+            clock.tick(FPS)
+    except Exception as err:
+        login.critical(login(), err)
+
 
 try:
     tile_images = {
@@ -171,6 +212,7 @@ class Coin(pygame.sprite.Sprite):
             super().__init__(coins_group, all_sprites)
             self.image = tile_images[tile_type]
             self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+            self.taken = False
         except Exception as err:
             login.critical(login(), err)
 
@@ -263,13 +305,15 @@ try:
 except Exception as err:
     login.critical(login(), err)
 
+start_screen()
 def main_game_ps4():
-    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock
+    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock, coins
     try:
         step = 10
         while running:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or\
+                        pygame.sprite.spritecollideany(player, victory_group):
                     running = False
                 if event.type == pygame.KEYDOWN:
                     ############### UPDATE SPRITE IF SPACE IS PRESSED #################################
@@ -303,7 +347,6 @@ def main_game_ps4():
                 #HANDLES ANALOG INPUTS
                 if event.type == pygame.JOYAXISMOTION:
                     analog_keys[event.axis] = event.value
-                    print(analog_keys)
                     # Horizontal Analog
                     if abs(analog_keys[0]) > .4:
                         if analog_keys[0] < -.7:
@@ -332,9 +375,20 @@ def main_game_ps4():
             camera.update(player)
             for sprite in all_sprites:
                 camera.apply(sprite)
+            for c in coins_group:
+                if player.rect.colliderect(c.rect):
+                    c.taken = True
+                    c.image = tile_images['empty']
+            k = 0
+            for c in coins_group:
+                if c.taken:
+                    k += 1
+            coins = k
             screen.fill(pygame.Color(0, 0, 0))
             wall_tiles_group.draw(screen)
             empty_tiles_group.draw(screen)
+            coins_group.draw(screen)
+            victory_group.draw(screen)
             player_group.draw(screen)
             pygame.display.flip()
             clock.tick(FPS)
@@ -343,12 +397,13 @@ def main_game_ps4():
 
 
 def main_game_key():
-    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock
+    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock, coins
     try:
         step = 10
         while running:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or\
+                        pygame.sprite.spritecollideany(player, victory_group):
                     running = False
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE:
@@ -367,18 +422,33 @@ def main_game_key():
             camera.update(player)
             for sprite in all_sprites:
                 camera.apply(sprite)
+            for c in coins_group:
+                if player.rect.colliderect(c.rect):
+                    c.taken = True
+                    print(c.image)
+                    c.image = tile_images['empty']
+                    print(c.image)
+            k = 0
+            for c in coins_group:
+                if c.taken:
+                    k += 1
+            coins = k
             screen.fill(pygame.Color(0, 0, 0))
             wall_tiles_group.draw(screen)
             empty_tiles_group.draw(screen)
+            coins_group.draw(screen)
+            victory_group.draw(screen)
             player_group.draw(screen)
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as err:
         login.critical(login(), err)
 
-if start_screen() == 'ps4':
+
+if joy_control:
     main_game_ps4()
 else:
     main_game_key()
+end_screen()
 
 terminate()
