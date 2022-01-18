@@ -2,164 +2,221 @@ import os
 import sys
 import pygame
 from config import *
-import pygame_logger
+from pygame_logger import Mario_Logging as login
 import json
 
-pygame.init()
-pygame.key.set_repeat(200, 70)
+try:
+    pygame.init()
+    pygame.key.set_repeat(200, 70)
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-clock = pygame.time.Clock()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    clock = pygame.time.Clock()
 
-player = None
-all_sprites = pygame.sprite.Group()
-walltiles_group = pygame.sprite.Group()
-emptytiles_group = pygame.sprite.Group()
-player_group = pygame.sprite.Group()
+    player = None
+    all_sprites = pygame.sprite.Group()
+    wall_tiles_group = pygame.sprite.Group()
+    empty_tiles_group = pygame.sprite.Group()
+    player_group = pygame.sprite.Group()
+    coins_group = pygame.sprite.Group()
+    victory_group = pygame.sprite.Group()
+except Exception as err:
+    login.critical(login(), err)
 
 
 def init_controller():
     global joystick, button_keys, analog_keys
     # инициализация джойстика
-    joysticks = []
-    for i in range(pygame.joystick.get_count()):
-        joysticks.append(pygame.joystick.Joystick(i))
-    for joystick in joysticks:
-        joystick.init()
-    # подгрузка конфига джойстика
-    with open(os.path.join("ps4_keys.json"), 'r+') as file:
-        button_keys = json.load(file)
-    # 0: Left analog horizonal, 1: Left Analog Vertical, 2: Right Analog Horizontal
-    # 3: Right Analog Vertical 4: Left Trigger, 5: Right Trigger
-    analog_keys = {0: 0, 1: 0, 2: 0, 3: 0, 4: -1, 5: -1}
+    try:
+        joysticks = []
+        for i in range(pygame.joystick.get_count()):
+            joysticks.append(pygame.joystick.Joystick(i))
+        for joystick in joysticks:
+            joystick.init()
+        # подгрузка конфига джойстика
+        with open(os.path.join("ps4_keys.json"), 'r+') as file:
+            button_keys = json.load(file)
+        # 0: Left analog horizonal, 1: Left Analog Vertical, 2: Right Analog Horizontal
+        # 3: Right Analog Vertical 4: Left Trigger, 5: Right Trigger
+        analog_keys = {0: 0, 1: 0, 2: 0, 3: 0, 4: -1, 5: -1}
+    except Exception as err:
+        login.critical(login(), err)
 
 
 def load_image(name, color_key=None):
-    fullname = os.path.join('data', name)
     try:
-        image = pygame.image.load(fullname)
-    except pygame.error as message:
-        print('Cannot load image:', name)
-        raise SystemExit(message)
-
-    if color_key is not None:
-        image.convert()
-        if color_key == -1:
-            color_key = image.get_at((0, 0))
-        image.set_colorkey(color_key)
-    else:
-        image = image.convert_alpha()
-    return image
-
-
-def load_level(filename):
-    filename = "data/" + filename
-    # читаем уровень, убирая символы перевода строки
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-
-    # и подсчитываем максимальную длину
-    max_width = max(map(len, level_map))
-
-    # дополняем каждую строку пустыми клетками ('.')
-    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+        fullname = os.path.join('data', name)
+        try:
+            image = pygame.image.load(fullname)
+        except pygame.error as message:
+            print('Cannot load image:', name)
+            raise SystemExit(message)
+        if color_key is not None:
+            image.convert()
+            if color_key == -1:
+                color_key = image.get_at((0, 0))
+            image.set_colorkey(color_key)
+        else:
+            image = image.convert_alpha()
+        return image
+    except Exception as err:
+        login.critical(login(), err)
 
 
-def generate_level(level):
-    new_player, x, y = None, None, None
-    for y in range(len(level)):
-        for x in range(len(level[y])):
-            if level[y][x] == '.':
-                EmptyTile('empty', x, y)
-            elif level[y][x] == '#':
-                WallTile('wall', x, y)
-            elif level[y][x] == '@':
-                EmptyTile('empty', x, y)
-                new_player = Player(x, y)
-    # вернем игрока, а также размер поля в клетках
-    return new_player, x, y
+def generate_level(filename):
+    try:
+        filename = "data/levels/" + filename
+        with open(filename, 'r') as mapFile:
+            level_map = [line.strip() for line in mapFile]
+        max_width = max(map(len, level_map))
+        level = list(map(lambda x: x.ljust(max_width, '.'), level_map))
+        new_player, x, y = None, None, None
+        for y in range(len(level)):
+            for x in range(len(level[y])):
+                if level[y][x] == '.':
+                    EmptyTile('empty', x, y)
+                elif level[y][x] == '#':
+                    WallTile('wall', x, y)
+                elif level[y][x] == '@':
+                    EmptyTile('empty', x, y)
+                    new_player = Mario(x, y)
+                elif level[y][x] == '?':
+                    EmptyTile('coin', x, y)
+                elif level[y][x] == '*':
+                    EmptyTile('v_block', x, y)
+        # вернем игрока, а также размер поля в клетках
+        return new_player, x, y
+    except Exception as err:
+        login.critical(login(), err)
 
 
 def terminate():
-    pygame.quit()
-    sys.exit()
+    try:
+        pygame.quit()
+        sys.exit()
+    except Exception as err:
+        login.critical(login(), err)
 
 
 def start_screen():
-    intro_text = ["ЗАСТАВКА", "",
-                  "Правила игры",
-                  "Если в правилах несколько строк,",
-                  "приходится выводить их построчно"]
+    try:
+        intro_text = ["SUPER MARIO VBROS", "", "", "", "", "", "", "", "", "",
+                      "Правила игры:",
+                      "Управление персонажем осуществляется",
+                      "посредством стрелочек/грибка.",
+                      ""]
 
-    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
+        background = pygame.transform.scale(load_image('background.png'), (WIDTH, HEIGHT))
+        screen.blit(background, (0, 0))
+        font = pygame.font.Font(None, 40)
+        text_coord = 50
+        for i in range(len(intro_text)):
+            string_rendered = font.render(intro_text[i], 1, pygame.Color(0, 0, 0))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 400 - intro_rect.width // 2
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
 
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
-        pygame.display.flip()
-        clock.tick(FPS)
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    return  # начинаем игру
+                elif event.type == pygame.JOYBUTTONDOWN:
+                    if event.button == button_keys['left_arrow']:
+                        return
+            pygame.display.flip()
+            clock.tick(FPS)
+    except Exception as err:
+        login.critical(login(), err)
 
-
-tile_images = {'wall': load_image('box.png'), 'empty': load_image('grass.png')}
-player_image = load_image('mar.png')
-
-tile_width = tile_height = 50
+try:
+    tile_images = {
+        'wall': load_image('box.png'),
+        'empty': load_image('grass.png'),
+        'coin': load_image('coin.png'),
+        'v_block': load_image('v_block.png')
+    }
+    player_image = load_image('mar.png')
+    tile_width = tile_height = 50
+except Exception as err:
+    login.critical(login(), err)
 
 
 class WallTile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
-        super().__init__(walltiles_group, all_sprites)
-        self.image = tile_images[tile_type]
-        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        try:
+            super().__init__(wall_tiles_group, all_sprites)
+            self.image = tile_images[tile_type]
+            self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        except Exception as err:
+            login.critical(login(), err)
 
 
 class EmptyTile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
-        super().__init__(emptytiles_group, all_sprites)
-        self.image = tile_images[tile_type]
-        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        try:
+            super().__init__(empty_tiles_group, all_sprites)
+            self.image = tile_images[tile_type]
+            self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        except Exception as err:
+            login.critical(login(), err)
 
 
-class Player(pygame.sprite.Sprite):
+class Coin(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        try:
+            super().__init__(coins_group, all_sprites)
+            self.image = tile_images[tile_type]
+            self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        except Exception as err:
+            login.critical(login(), err)
+
+
+class VictoryTile(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        try:
+            super().__init__(victory_group, all_sprites)
+            self.image = tile_images[tile_type]
+            self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        except Exception as err:
+            login.critical(login(), err)
+
+
+class Mario(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
-        super().__init__(player_group, all_sprites)
-        self.image = player_image
-        self.rect = self.image.get_rect().move(
-            tile_width * pos_x + 15, tile_height * pos_y + 5)
+        try:
+            super().__init__(player_group, all_sprites)
+            self.image = player_image
+            self.rect = self.image.get_rect().move(
+                tile_width * pos_x + 15, tile_height * pos_y + 5)
+        except Exception as err:
+            login.critical(login(), err)
 
-    def move(self, axys, sign):
-        if axys == 'x':
-            if sign == '+':
-                self.rect.x += STEP
-                if pygame.sprite.spritecollideany(self, walltiles_group):
-                    self.rect.x -= STEP
+    def move(self, axys, sign, step):
+        try:
+            if axys == 'x':
+                if sign == '+':
+                    self.rect.x += step
+                    if pygame.sprite.spritecollideany(self, wall_tiles_group):
+                        self.rect.x -= step
+                else:
+                    self.rect.x -= step
+                    if pygame.sprite.spritecollideany(self, wall_tiles_group):
+                        self.rect.x += step
             else:
-                self.rect.x -= STEP
-                if pygame.sprite.spritecollideany(self, walltiles_group):
-                    self.rect.x += STEP
-        else:
-            if sign == '+':
-                self.rect.y += STEP
-                if pygame.sprite.spritecollideany(self, walltiles_group):
-                    self.rect.y -= STEP
-            else:
-                self.rect.y -= STEP
-                if pygame.sprite.spritecollideany(self, walltiles_group):
-                    self.rect.y += STEP
+                if sign == '+':
+                    self.rect.y += step
+                    if pygame.sprite.spritecollideany(self, wall_tiles_group):
+                        self.rect.y -= step
+                else:
+                    self.rect.y -= step
+                    if pygame.sprite.spritecollideany(self, wall_tiles_group):
+                        self.rect.y += step
+        except Exception as err:
+            login.critical(login(), err)
 
 
 class Camera:
@@ -171,129 +228,157 @@ class Camera:
 
     # сдвинуть объект obj на смещение камеры
     def apply(self, obj):
-        obj.rect.x += self.dx
-        # вычислим координату клетки, если она уехала влево за границу экрана
-        if obj.rect.x < -obj.rect.width:
-            obj.rect.x += (self.field_size[0] + 1) * obj.rect.width
-        # вычислим координату клетки, если она уехала вправо за границу экрана
-        if obj.rect.x >= (self.field_size[0]) * obj.rect.width:
-            obj.rect.x += -obj.rect.width * (1 + self.field_size[0])
-        obj.rect.y += self.dy
-        # вычислим координату клетки, если она уехала вверх за границу экрана
-        if obj.rect.y < -obj.rect.height:
-            obj.rect.y += (self.field_size[1] + 1) * obj.rect.height
-        # вычислим координату клетки, если она уехала вниз за границу экрана
-        if obj.rect.y >= (self.field_size[1]) * obj.rect.height:
-            obj.rect.y += -obj.rect.height * (1 + self.field_size[1])
+        try:
+            obj.rect.x += self.dx
+            # вычислим координату клетки, если она уехала влево за границу экрана
+            if obj.rect.x < -obj.rect.width:
+                obj.rect.x += (self.field_size[0] + 1) * obj.rect.width
+            # вычислим координату клетки, если она уехала вправо за границу экрана
+            if obj.rect.x >= (self.field_size[0]) * obj.rect.width:
+                obj.rect.x += -obj.rect.width * (1 + self.field_size[0])
+            obj.rect.y += self.dy
+            # вычислим координату клетки, если она уехала вверх за границу экрана
+            if obj.rect.y < -obj.rect.height:
+                obj.rect.y += (self.field_size[1] + 1) * obj.rect.height
+            # вычислим координату клетки, если она уехала вниз за границу экрана
+            if obj.rect.y >= (self.field_size[1]) * obj.rect.height:
+                obj.rect.y += -obj.rect.height * (1 + self.field_size[1])
+        except Exception as err:
+            login.critical(login(), err)
 
     # позиционировать камеру на объекте target
     def update(self, target):
-        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+        try:
+            self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+            self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+        except Exception as err:
+            login.critical(login(), err)
 
 
-start_screen()
-
-player, level_x, level_y = generate_level(load_level("levelex.txt"))
-camera = Camera((level_x, level_y))
-
-running = True
+try:
+    init_controller()
+    player, level_x, level_y = generate_level("level_1.txt")
+    camera = Camera((level_x, level_y))
+    running = True
+except Exception as err:
+    login.critical(login(), err)
 
 def main_game_ps4():
-    global running, player, camera, all_sprites, screen, walltiles_group, emptytiles_group, player_group, clock
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYDOWN:
-                ############### UPDATE SPRITE IF SPACE IS PRESSED #################################
-                pass
+    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock
+    try:
+        step = 10
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    ############### UPDATE SPRITE IF SPACE IS PRESSED #################################
+                    pass
 
-            # HANDLES BUTTON PRESSES
-            if event.type == pygame.JOYBUTTONDOWN:
-                if event.button == button_keys['left_arrow']:
-                    LEFT = True
-                if event.button == button_keys['right_arrow']:
-                    RIGHT = True
-                if event.button == button_keys['down_arrow']:
-                    DOWN = True
-                if event.button == button_keys['up_arrow']:
-                    UP = True
-            # HANDLES BUTTON RELEASES
-            if event.type == pygame.JOYBUTTONUP:
-                if event.button == button_keys['left_arrow']:
-                    LEFT = False
-                if event.button == button_keys['right_arrow']:
-                    RIGHT = False
-                if event.button == button_keys['down_arrow']:
-                    DOWN = False
-                if event.button == button_keys['up_arrow']:
-                    UP = False
-
-            #HANDLES ANALOG INPUTS
-            if event.type == pygame.JOYAXISMOTION:
-                analog_keys[event.axis] = event.value
-                # print(analog_keys)
-                # Horizontal Analog
-                if abs(analog_keys[0]) > .4:
-                    if analog_keys[0] < -.7:
+                # HANDLES BUTTON PRESSES
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if event.button == button_keys['left_arrow']:
                         LEFT = True
-                    else:
-                        LEFT = False
-                    if analog_keys[0] > .7:
+                        player.move('x', '-', step)
+                    if event.button == button_keys['right_arrow']:
                         RIGHT = True
-                    else:
-                        RIGHT = False
-                # Vertical Analog
-                if abs(analog_keys[1]) > .4:
-                    if analog_keys[1] < -.7:
-                        UP = True
-                    else:
-                        UP = False
-                    if analog_keys[1] > .7:
+                        player.move('x', '+', step)
+                    if event.button == button_keys['down_arrow']:
                         DOWN = True
-                    else:
+                        player.move('y', '+', step)
+                    if event.button == button_keys['up_arrow']:
+                        UP = True
+                        player.move('y', '-', step)
+                # HANDLES BUTTON RELEASES
+                if event.type == pygame.JOYBUTTONUP:
+                    if event.button == button_keys['left_arrow']:
+                        LEFT = False
+                    if event.button == button_keys['right_arrow']:
+                        RIGHT = False
+                    if event.button == button_keys['down_arrow']:
                         DOWN = False
-                    # Triggers
-                if analog_keys[4] > 0:  # Left trigger
-                    color += 2
-                if analog_keys[5] > 0:  # Right Trigger
-                    color -= 2
+                    if event.button == button_keys['up_arrow']:
+                        UP = False
 
-
-
+                #HANDLES ANALOG INPUTS
+                if event.type == pygame.JOYAXISMOTION:
+                    analog_keys[event.axis] = event.value
+                    print(analog_keys)
+                    # Horizontal Analog
+                    if abs(analog_keys[0]) > .4:
+                        if analog_keys[0] < -.7:
+                            LEFT = True
+                            player.move('x', '-', 1)
+                        else:
+                            LEFT = False
+                        if analog_keys[0] > .7:
+                            RIGHT = True
+                            player.move('x', '+', 1)
+                        else:
+                            RIGHT = False
+                    # Vertical Analog
+                    if abs(analog_keys[1]) > .4:
+                        if analog_keys[1] < -.7:
+                            UP = True
+                            player.move('y', '-', 1)
+                        else:
+                            UP = False
+                        if analog_keys[1] > .7:
+                            DOWN = True
+                            player.move('y', '+', 1)
+                        else:
+                            DOWN = False
+                        # Triggers
+            camera.update(player)
+            for sprite in all_sprites:
+                camera.apply(sprite)
+            screen.fill(pygame.Color(0, 0, 0))
+            wall_tiles_group.draw(screen)
+            empty_tiles_group.draw(screen)
+            player_group.draw(screen)
+            pygame.display.flip()
+            clock.tick(FPS)
+    except Exception as err:
+        login.critical(login(), err)
 
 
 def main_game_key():
-    global running, player, camera, all_sprites, screen, walltiles_group, emptytiles_group, player_group, clock
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    player.move('x', '-')
-                if event.key == pygame.K_RIGHT:
-                    player.move('x', '+')
-                if event.key == pygame.K_UP:
-                    player.move('y', '-')
-                if event.key == pygame.K_DOWN:
-                    player.move('y', '+')
+    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock
+    try:
+        step = 10
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_BACKSPACE:
+                        step = 20
+                    if event.key == pygame.K_LEFT:
+                        player.move('x', '-', step)
+                    if event.key == pygame.K_RIGHT:
+                        player.move('x', '+', step)
+                    if event.key == pygame.K_UP:
+                        player.move('y', '-', step)
+                    if event.key == pygame.K_DOWN:
+                        player.move('y', '+', step)
+                elif event.type == pygame.KEYUP:
+                    if event.key == pygame.K_BACKSPACE:
+                        step = 10
+            camera.update(player)
+            for sprite in all_sprites:
+                camera.apply(sprite)
+            screen.fill(pygame.Color(0, 0, 0))
+            wall_tiles_group.draw(screen)
+            empty_tiles_group.draw(screen)
+            player_group.draw(screen)
+            pygame.display.flip()
+            clock.tick(FPS)
+    except Exception as err:
+        login.critical(login(), err)
 
-        camera.update(player)
-
-        for sprite in all_sprites:
-            camera.apply(sprite)
-
-        screen.fill(pygame.Color(0, 0, 0))
-        walltiles_group.draw(screen)
-        emptytiles_group.draw(screen)
-        player_group.draw(screen)
-
-        pygame.display.flip()
-
-        clock.tick(FPS)
-
-main_game_key()
+if start_screen() == 'ps4':
+    main_game_ps4()
+else:
+    main_game_key()
 
 terminate()
