@@ -1,14 +1,12 @@
 import os
 import sys
 import pygame
+from config import *
+import pygame_logger
+import json
 
 pygame.init()
 pygame.key.set_repeat(200, 70)
-
-FPS = 50
-WIDTH = 400
-HEIGHT = 300
-STEP = 10
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
@@ -18,6 +16,22 @@ all_sprites = pygame.sprite.Group()
 walltiles_group = pygame.sprite.Group()
 emptytiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
+
+
+def init_controller():
+    global joystick, button_keys, analog_keys
+    # инициализация джойстика
+    joysticks = []
+    for i in range(pygame.joystick.get_count()):
+        joysticks.append(pygame.joystick.Joystick(i))
+    for joystick in joysticks:
+        joystick.init()
+    # подгрузка конфига джойстика
+    with open(os.path.join("ps4_keys.json"), 'r+') as file:
+        button_keys = json.load(file)
+    # 0: Left analog horizonal, 1: Left Analog Vertical, 2: Right Analog Horizontal
+    # 3: Right Analog Vertical 4: Left Trigger, 5: Right Trigger
+    analog_keys = {0: 0, 1: 0, 2: 0, 3: 0, 4: -1, 5: -1}
 
 
 def load_image(name, color_key=None):
@@ -124,7 +138,8 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
         self.image = player_image
-        self.rect = self.image.get_rect().move(tile_width * pos_x + 15, tile_height * pos_y + 5)
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x + 15, tile_height * pos_y + 5)
 
     def move(self, axys, sign):
         if axys == 'x':
@@ -184,32 +199,101 @@ camera = Camera((level_x, level_y))
 
 running = True
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                player.move('x', '-')
-            if event.key == pygame.K_RIGHT:
-                player.move('x', '+')
-            if event.key == pygame.K_UP:
-                player.move('y', '-')
-            if event.key == pygame.K_DOWN:
-                player.move('y', '+')
+def main_game_ps4():
+    global running, player, camera, all_sprites, screen, walltiles_group, emptytiles_group, player_group, clock
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN:
+                ############### UPDATE SPRITE IF SPACE IS PRESSED #################################
+                pass
 
-    camera.update(player)
+            # HANDLES BUTTON PRESSES
+            if event.type == pygame.JOYBUTTONDOWN:
+                if event.button == button_keys['left_arrow']:
+                    LEFT = True
+                if event.button == button_keys['right_arrow']:
+                    RIGHT = True
+                if event.button == button_keys['down_arrow']:
+                    DOWN = True
+                if event.button == button_keys['up_arrow']:
+                    UP = True
+            # HANDLES BUTTON RELEASES
+            if event.type == pygame.JOYBUTTONUP:
+                if event.button == button_keys['left_arrow']:
+                    LEFT = False
+                if event.button == button_keys['right_arrow']:
+                    RIGHT = False
+                if event.button == button_keys['down_arrow']:
+                    DOWN = False
+                if event.button == button_keys['up_arrow']:
+                    UP = False
 
-    for sprite in all_sprites:
-        camera.apply(sprite)
+            #HANDLES ANALOG INPUTS
+            if event.type == pygame.JOYAXISMOTION:
+                analog_keys[event.axis] = event.value
+                # print(analog_keys)
+                # Horizontal Analog
+                if abs(analog_keys[0]) > .4:
+                    if analog_keys[0] < -.7:
+                        LEFT = True
+                    else:
+                        LEFT = False
+                    if analog_keys[0] > .7:
+                        RIGHT = True
+                    else:
+                        RIGHT = False
+                # Vertical Analog
+                if abs(analog_keys[1]) > .4:
+                    if analog_keys[1] < -.7:
+                        UP = True
+                    else:
+                        UP = False
+                    if analog_keys[1] > .7:
+                        DOWN = True
+                    else:
+                        DOWN = False
+                    # Triggers
+                if analog_keys[4] > 0:  # Left trigger
+                    color += 2
+                if analog_keys[5] > 0:  # Right Trigger
+                    color -= 2
 
-    screen.fill(pygame.Color(0, 0, 0))
-    walltiles_group.draw(screen)
-    emptytiles_group.draw(screen)
-    player_group.draw(screen)
 
-    pygame.display.flip()
 
-    clock.tick(FPS)
+
+
+def main_game_key():
+    global running, player, camera, all_sprites, screen, walltiles_group, emptytiles_group, player_group, clock
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    player.move('x', '-')
+                if event.key == pygame.K_RIGHT:
+                    player.move('x', '+')
+                if event.key == pygame.K_UP:
+                    player.move('y', '-')
+                if event.key == pygame.K_DOWN:
+                    player.move('y', '+')
+
+        camera.update(player)
+
+        for sprite in all_sprites:
+            camera.apply(sprite)
+
+        screen.fill(pygame.Color(0, 0, 0))
+        walltiles_group.draw(screen)
+        emptytiles_group.draw(screen)
+        player_group.draw(screen)
+
+        pygame.display.flip()
+
+        clock.tick(FPS)
+
+main_game_key()
 
 terminate()
