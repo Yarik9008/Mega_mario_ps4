@@ -1,0 +1,4 @@
+2022-01-18 15:47:20,338:INFO:start-logging-sistem
+2022-01-18 15:47:20,338:CRITICAL:No file 'data\victory_screen.png' found in working directory 'C:\Users\Eyenot\Desktop\Mega_mario_ps4-main'.
+2022-01-18 15:47:20,341:INFO:start-logging-sistem
+2022-01-18 15:47:20,342:CRITICAL:argument 1 must be pygame.Surface, not None

@@ -1,0 +1,2 @@
+2022-01-18 15:47:20,341:INFO:start-logging-sistem
+2022-01-18 15:47:20,342:CRITICAL:argument 1 must be pygame.Surface, not None

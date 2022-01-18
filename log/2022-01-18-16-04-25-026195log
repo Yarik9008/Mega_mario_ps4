@@ -1,0 +1,2 @@
+2022-01-18 16:04:25,043:INFO:start-logging-sistem
+2022-01-18 16:04:25,044:CRITICAL:module 'pygame' has no attribute 'spritecollide'

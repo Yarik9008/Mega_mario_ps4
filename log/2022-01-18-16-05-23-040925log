@@ -1,0 +1,2 @@
+2022-01-18 16:05:23,057:INFO:start-logging-sistem
+2022-01-18 16:05:23,058:CRITICAL:spritecollide() missing 1 required positional argument: 'dokill'
