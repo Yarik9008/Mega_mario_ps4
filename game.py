@@ -297,14 +297,6 @@ class Camera:
             login.critical(login(), err)
 
 
-try:
-    init_controller()
-    player, level_x, level_y = generate_level("level_1.txt")
-    camera = Camera((level_x, level_y))
-    running = True
-except Exception as err:
-    login.critical(login(), err)
-
 start_screen()
 def main_game_ps4():
     global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock, coins
@@ -312,7 +304,9 @@ def main_game_ps4():
         step = 10
         while running:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or\
+                if event.type == pygame.QUIT:
+                    terminate()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or\
                         pygame.sprite.spritecollideany(player, victory_group):
                     running = False
                 if event.type == pygame.KEYDOWN:
@@ -402,12 +396,12 @@ def main_game_key():
         step = 10
         while running:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or\
+                if event.type == pygame.QUIT:
+                    terminate()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or\
                         pygame.sprite.spritecollideany(player, victory_group):
                     running = False
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_BACKSPACE:
-                        step = 20
                     if event.key == pygame.K_LEFT:
                         player.move('x', '-', step)
                     if event.key == pygame.K_RIGHT:
@@ -416,18 +410,13 @@ def main_game_key():
                         player.move('y', '-', step)
                     if event.key == pygame.K_DOWN:
                         player.move('y', '+', step)
-                elif event.type == pygame.KEYUP:
-                    if event.key == pygame.K_BACKSPACE:
-                        step = 10
             camera.update(player)
             for sprite in all_sprites:
                 camera.apply(sprite)
             for c in coins_group:
                 if player.rect.colliderect(c.rect):
                     c.taken = True
-                    print(c.image)
                     c.image = tile_images['empty']
-                    print(c.image)
             k = 0
             for c in coins_group:
                 if c.taken:
@@ -445,10 +434,69 @@ def main_game_key():
         login.critical(login(), err)
 
 
-if joy_control:
-    main_game_ps4()
-else:
-    main_game_key()
-end_screen()
+try:
+    init_controller()
+    player, level_x, level_y = generate_level("level_1.txt")
+    camera = Camera((level_x, level_y))
+    running = True
+    if joy_control:
+        main_game_ps4()
+    else:
+        main_game_key()
+    all_sprites = pygame.sprite.Group()
+    wall_tiles_group = pygame.sprite.Group()
+    empty_tiles_group = pygame.sprite.Group()
+    player_group = pygame.sprite.Group()
+    coins_group = pygame.sprite.Group()
+    victory_group = pygame.sprite.Group()
+    player, level_x, level_y = generate_level("level_2.txt")
+    camera = Camera((level_x, level_y))
+    running = True
+    if joy_control:
+        main_game_ps4()
+    else:
+        main_game_key()
+    all_sprites = pygame.sprite.Group()
+    wall_tiles_group = pygame.sprite.Group()
+    empty_tiles_group = pygame.sprite.Group()
+    player_group = pygame.sprite.Group()
+    coins_group = pygame.sprite.Group()
+    victory_group = pygame.sprite.Group()
+    player, level_x, level_y = generate_level("level_3.txt")
+    camera = Camera((level_x, level_y))
+    running = True
+    if joy_control:
+        main_game_ps4()
+    else:
+        main_game_key()
+    all_sprites = pygame.sprite.Group()
+    wall_tiles_group = pygame.sprite.Group()
+    empty_tiles_group = pygame.sprite.Group()
+    player_group = pygame.sprite.Group()
+    coins_group = pygame.sprite.Group()
+    victory_group = pygame.sprite.Group()
+    player, level_x, level_y = generate_level("level_4.txt")
+    camera = Camera((level_x, level_y))
+    running = True
+    if joy_control:
+        main_game_ps4()
+    else:
+        main_game_key()
+    all_sprites = pygame.sprite.Group()
+    wall_tiles_group = pygame.sprite.Group()
+    empty_tiles_group = pygame.sprite.Group()
+    player_group = pygame.sprite.Group()
+    coins_group = pygame.sprite.Group()
+    victory_group = pygame.sprite.Group()
+    player, level_x, level_y = generate_level("level_5.txt")
+    camera = Camera((level_x, level_y))
+    running = True
+    if joy_control:
+        main_game_ps4()
+    else:
+        main_game_key()
+    end_screen()
+except Exception as err:
+    login.critical(login(), err)
 
 terminate()
