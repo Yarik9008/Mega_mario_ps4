@@ -14,7 +14,18 @@ try:
 
     player = None
     coins = 0
-    all_coins = 0
+    all_coins_taken = 0
+    all_coins_possible = 0
+    lvl1_coins = 0
+    lvl2_coins = 0
+    lvl3_coins = 0
+    lvl4_coins = 0
+    lvl5_coins = 0
+    lvl1_coins_possible = 0
+    lvl2_coins_possible = 0
+    lvl3_coins_possible = 0
+    lvl4_coins_possible = 0
+    lvl5_coins_possible = 0
     joy_control = True
     all_sprites = pygame.sprite.Group()
     wall_tiles_group = pygame.sprite.Group()
@@ -68,14 +79,10 @@ def load_image(name, color_key=None):
 
 
 def generate_level(filename):
-    global all_coins
     try:
         filename = "data/levels/" + filename
         with open(filename, 'r') as mapFile:
             level_map = [line.strip() for line in mapFile]
-            all_coins = 0
-            for string in level_map:
-                all_coins += list(string).count('*')
         max_width = max(map(len, level_map))
         level = list(map(lambda x: x.ljust(max_width, '.'), level_map))
         new_player, x, y = None, None, None
@@ -145,15 +152,18 @@ def start_screen():
 
 
 def end_screen():
-    global coins, all_coins
+    global coins, all_coins_taken
     try:
-        intro_text = [f"Coins: {coins}/{all_coins}"]
+        intro_text = [f"Coins at all: {all_coins_taken}/{all_coins_possible}", "", "", "", "", "", "", "", "", "", "", "", "", ""
+                      f"level 1:{lvl1_coins}/{lvl1_coins_possible} level 2:{lvl2_coins}/{lvl2_coins_possible}"
+                      f" level 3:{lvl3_coins}/{lvl3_coins_possible} level 4:{lvl4_coins}/{lvl4_coins_possible}"
+                      f" level 5:{lvl5_coins}/{lvl5_coins_possible}"]
         background = pygame.transform.scale(load_image('victory_screen.jpg'), (WIDTH, HEIGHT))
         screen.blit(background, (0, 0))
         font = pygame.font.Font(None, 40)
         text_coord = 50
         for i in range(len(intro_text)):
-            string_rendered = font.render(intro_text[i], 1, pygame.Color(0, 0, 0))
+            string_rendered = font.render(intro_text[i], 1, pygame.Color('pink'))
             intro_rect = string_rendered.get_rect()
             text_coord += 10
             intro_rect.top = text_coord
@@ -298,8 +308,11 @@ class Camera:
 
 
 start_screen()
-def main_game_ps4():
-    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock, coins
+def main_game_ps4(lvl_num):
+    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock,\
+        coins, lvl1_coins, lvl2_coins, lvl3_coins, lvl4_coins, lvl5_coins, all_coins_possible, \
+        string_rendered, text_rect, lvl1_coins_possible, lvl2_coins_possible, lvl3_coins_possible, lvl4_coins_possible,\
+        lvl5_coins_possible
     try:
         step = 10
         while running:
@@ -309,6 +322,16 @@ def main_game_ps4():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or\
                         pygame.sprite.spritecollideany(player, victory_group):
                     running = False
+                    if lvl_num == 1:
+                        return lvl1_coins
+                    elif lvl_num == 2:
+                        return lvl2_coins
+                    elif lvl_num == 3:
+                        return lvl3_coins
+                    elif lvl_num == 4:
+                        return lvl4_coins
+                    elif lvl_num == 5:
+                        return lvl5_coins
                 if event.type == pygame.KEYDOWN:
                     ############### UPDATE SPRITE IF SPACE IS PRESSED #################################
                     pass
@@ -375,23 +398,78 @@ def main_game_ps4():
                     c.image = tile_images['empty']
             k = 0
             for c in coins_group:
+                if player.rect.colliderect(c.rect):
+                    c.taken = True
+                    c.image = tile_images['empty']
+            for c in coins_group:
                 if c.taken:
                     k += 1
-            coins = k
+            if lvl_num == 1:
+                lvl1_coins = k
+            elif lvl_num == 2:
+                lvl2_coins = k
+            elif lvl_num == 3:
+                lvl3_coins = k
+            elif lvl_num == 4:
+                lvl4_coins = k
+            elif lvl_num == 5:
+                lvl5_coins = k
+            j = 0
+            for elem in coins_group:
+                j += 1
+            if lvl_num == 1:
+                coin_count_disp = f'coins:{lvl1_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
+            elif lvl_num == 2:
+                coin_count_disp = f'coins:{lvl2_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
+            elif lvl_num == 3:
+                coin_count_disp = f'coins:{lvl3_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
+            elif lvl_num == 4:
+                coin_count_disp = f'coins:{lvl4_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
+            elif lvl_num == 5:
+                coin_count_disp = f'coins:{lvl5_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
             screen.fill(pygame.Color(0, 0, 0))
             wall_tiles_group.draw(screen)
             empty_tiles_group.draw(screen)
             coins_group.draw(screen)
             victory_group.draw(screen)
             player_group.draw(screen)
+            screen.blit(string_rendered, text_rect)
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as err:
         login.critical(login(), err)
 
 
-def main_game_key():
-    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock, coins
+def main_game_key(lvl_num):
+    global running, player, camera, all_sprites, screen, wall_tiles_group, empty_tiles_group, player_group, clock,\
+        coins, lvl1_coins, lvl2_coins, lvl3_coins, lvl4_coins, lvl5_coins, all_coins_possible, \
+        string_rendered, text_rect, lvl1_coins_possible, lvl2_coins_possible, lvl3_coins_possible, lvl4_coins_possible,\
+        lvl5_coins_possible
     try:
         step = 10
         while running:
@@ -401,33 +479,91 @@ def main_game_key():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE or\
                         pygame.sprite.spritecollideany(player, victory_group):
                     running = False
+                    if lvl_num == 1:
+                        return lvl1_coins, sum([1 for elem in coins_group])
+                    elif lvl_num == 2:
+                        return lvl2_coins, sum([1 for elem in coins_group])
+                    elif lvl_num == 3:
+                        return lvl3_coins, sum([1 for elem in coins_group])
+                    elif lvl_num == 4:
+                        return lvl4_coins, sum([1 for elem in coins_group])
+                    elif lvl_num == 5:
+                        return lvl5_coins, sum([1 for elem in coins_group])
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_LEFT:
+                    if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                         player.move('x', '-', step)
-                    if event.key == pygame.K_RIGHT:
+                    if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         player.move('x', '+', step)
-                    if event.key == pygame.K_UP:
+                    if event.key == pygame.K_UP or event.key == pygame.K_w:
                         player.move('y', '-', step)
-                    if event.key == pygame.K_DOWN:
+                    if event.key == pygame.K_DOWN or event.key == pygame.K_s:
                         player.move('y', '+', step)
             camera.update(player)
             for sprite in all_sprites:
                 camera.apply(sprite)
+            k = 0
             for c in coins_group:
                 if player.rect.colliderect(c.rect):
                     c.taken = True
                     c.image = tile_images['empty']
-            k = 0
             for c in coins_group:
                 if c.taken:
                     k += 1
-            coins = k
+            if lvl_num == 1:
+                lvl1_coins = k
+            elif lvl_num == 2:
+                lvl2_coins = k
+            elif lvl_num == 3:
+                lvl3_coins = k
+            elif lvl_num == 4:
+                lvl4_coins = k
+            elif lvl_num == 5:
+                lvl5_coins = k
+            j = 0
+            for elem in coins_group:
+                j += 1
+            if lvl_num == 1:
+                coin_count_disp = f'coins:{lvl1_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
+            elif lvl_num == 2:
+                coin_count_disp = f'coins:{lvl2_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
+            elif lvl_num == 3:
+                coin_count_disp = f'coins:{lvl3_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
+            elif lvl_num == 4:
+                coin_count_disp = f'coins:{lvl4_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
+            elif lvl_num == 5:
+                coin_count_disp = f'coins:{lvl5_coins}/{j}'
+                font = pygame.font.Font(None, 50)
+                string_rendered = font.render(coin_count_disp, 1, pygame.Color('pink'))
+                text_rect = string_rendered.get_rect()
+                text_rect.x = 10
+                text_rect.y = 10
             screen.fill(pygame.Color(0, 0, 0))
             wall_tiles_group.draw(screen)
             empty_tiles_group.draw(screen)
             coins_group.draw(screen)
             victory_group.draw(screen)
             player_group.draw(screen)
+            screen.blit(string_rendered, text_rect)
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as err:
@@ -437,12 +573,16 @@ def main_game_key():
 try:
     init_controller()
     player, level_x, level_y = generate_level("level_1.txt")
+    all_coins_possible += sum(1 for elem in coins_group)
     camera = Camera((level_x, level_y))
     running = True
     if joy_control:
-        main_game_ps4()
+        result_coins = main_game_ps4(1)
     else:
-        main_game_key()
+        result_coins = main_game_key(1)
+    lvl1_coins = result_coins[0]
+    all_coins_taken += result_coins[0]
+    lvl1_coins_possible = result_coins[1]
     all_sprites = pygame.sprite.Group()
     wall_tiles_group = pygame.sprite.Group()
     empty_tiles_group = pygame.sprite.Group()
@@ -450,12 +590,16 @@ try:
     coins_group = pygame.sprite.Group()
     victory_group = pygame.sprite.Group()
     player, level_x, level_y = generate_level("level_2.txt")
+    all_coins_possible += sum(1 for elem in coins_group)
     camera = Camera((level_x, level_y))
     running = True
     if joy_control:
-        main_game_ps4()
+        result_coins = main_game_ps4(2)
     else:
-        main_game_key()
+        result_coins = main_game_key(2)
+    lvl2_coins = result_coins[0]
+    all_coins_taken += result_coins[0]
+    lvl2_coins_possible = result_coins[1]
     all_sprites = pygame.sprite.Group()
     wall_tiles_group = pygame.sprite.Group()
     empty_tiles_group = pygame.sprite.Group()
@@ -463,12 +607,16 @@ try:
     coins_group = pygame.sprite.Group()
     victory_group = pygame.sprite.Group()
     player, level_x, level_y = generate_level("level_3.txt")
+    all_coins_possible += sum(1 for elem in coins_group)
     camera = Camera((level_x, level_y))
     running = True
     if joy_control:
-        main_game_ps4()
+        result_coins = main_game_ps4(3)
     else:
-        main_game_key()
+        result_coins = main_game_key(3)
+    lvl3_coins = result_coins[0]
+    all_coins_taken += result_coins[0]
+    lvl3_coins_possible = result_coins[1]
     all_sprites = pygame.sprite.Group()
     wall_tiles_group = pygame.sprite.Group()
     empty_tiles_group = pygame.sprite.Group()
@@ -476,12 +624,16 @@ try:
     coins_group = pygame.sprite.Group()
     victory_group = pygame.sprite.Group()
     player, level_x, level_y = generate_level("level_4.txt")
+    all_coins_possible += sum(1 for elem in coins_group)
     camera = Camera((level_x, level_y))
     running = True
     if joy_control:
-        main_game_ps4()
+        result_coins = main_game_ps4(4)
     else:
-        main_game_key()
+        result_coins = main_game_key(4)
+    lvl4_coins = result_coins[0]
+    all_coins_taken += result_coins[0]
+    lvl4_coins_possible = result_coins[1]
     all_sprites = pygame.sprite.Group()
     wall_tiles_group = pygame.sprite.Group()
     empty_tiles_group = pygame.sprite.Group()
@@ -489,12 +641,16 @@ try:
     coins_group = pygame.sprite.Group()
     victory_group = pygame.sprite.Group()
     player, level_x, level_y = generate_level("level_5.txt")
+    all_coins_possible += sum(1 for elem in coins_group)
     camera = Camera((level_x, level_y))
     running = True
     if joy_control:
-        main_game_ps4()
+        result_coins = main_game_ps4(5)
     else:
-        main_game_key()
+        result_coins = main_game_key(5)
+    lvl5_coins = result_coins[0]
+    all_coins_taken += result_coins[0]
+    lvl5_coins_possible = result_coins[1]
     end_screen()
 except Exception as err:
     login.critical(login(), err)
